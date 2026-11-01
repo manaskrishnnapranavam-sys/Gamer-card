@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GamerCard - Your Universal Sports & Gaming Passport</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- QRCode.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Canvas-Confetti for achievement celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            orbitron: ['Orbitron', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              accent: '#00ffcc',
+              gold: '#ffd700',
+              dark: '#0b0f19',
+              card: '#151c2c'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      font-family: 'Inter', sans-serif;
+    }
+    .font-orbitron {
+      font-family: 'Orbitron', sans-serif;
+    }
+    /* Holographic Shimmer Effect for Gamer Cards */
+    .holo-card {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .holo-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent 0%,
+        rgba(0, 255, 204, 0.05) 30%,
+        rgba(99, 102, 241, 0.15) 50%,
+        rgba(255, 0, 128, 0.05) 70%,
+        transparent 100%
+      );
+      transform: rotate(30deg);
+      pointer-events: none;
+      animation: holoShift 8s ease infinite alternate;
+    }
+    @keyframes holoShift {
+      0% { transform: translateY(-10%) rotate(25deg); }
+      100% { transform: translateY(10%) rotate(35deg); }
+    }
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0f19;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4f46e5;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-brand-accent selection:text-black">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-gray-800 bg-gray-900/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Logo -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTo('landing')">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid fa-id-card text-xl"></i>
+        </div>
+        <span class="font-orbitron font-extrabold text-xl tracking-wider text-white">GAMER<span class="text-brand-accent">CARD</span></span>
+      </div>
+
+      <!-- Navigation Actions -->
+      <nav id="nav-actions" class="flex items-center space-x-3">
+        <!-- JS dynamically renders standard links or logged-in user profile -->
+      </nav>
+    </div>
+  </header>
+
+  <!-- Notification Toast Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- MAIN VIEW CONTAINER (Renders views dynamically) -->
+  <main id="app-view" class="flex-grow">
+    <!-- Content injected by JavaScript -->
+  </main>
+
+  <!-- Global Modal Popup Container -->
+  <div id="global-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div id="modal-content" class="bg-gray-900 border border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+      <!-- Modal dynamically populated -->
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-gray-800 bg-gray-950 py-6 text-center text-xs text-gray-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div>
+        <span class="font-orbitron text-gray-400 font-semibold">GAMERCARD</span> &copy; 2026 — Local-First Sports & Gaming Identity System.
+      </div>
+      <div class="flex space-x-4">
+        <span class="hover:text-gray-300 cursor-pointer" onclick="showToast('Local Storage Active', 'info')"><i class="fa-solid fa-database text-brand-accent"></i> LocalStorage Engine</span>
+        <span class="hover:text-gray-300 cursor-pointer" onclick="navigateTo('landing')">Privacy Safe</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script>
+    // --- APP STATE ENGINE ---
+    const STORAGE_KEYS = {
+      USERS: 'gc_users_db',
+      CURRENT_USER: 'gc_session_user'
+    };
+
+    // Default Pre-populated Sports / Game Categories
+    const DEFAULT_GAMES = [
+      { id: 'cricket', name: 'Cricket', type: 'Physical Sport', icon: 'fa-cricket-bat-ball', types: ['Self Practice/Nets', 'Solo Match', 'Team League', 'Friendly Tournament'] },
+      { id: 'football', name: 'Football / Soccer', type: 'Physical Sport', icon: 'fa-futbol', types: ['5-a-side Nets', 'Team Match', 'Practice Drills', 'Club Cup'] },
+      { id: 'valorant', name: 'Valorant', type: 'Esports', icon: 'fa-gamepad', types: ['Competitive Rank', 'Unrated', 'Custom Team Match', 'Deathmatch'] },
+      { id: 'chess', name: 'Chess', type: 'Mind Sport', icon: 'fa-chess', types: ['Blitz 3+0', 'Rapid 10 min', 'Over the Board', 'Tournament'] }
+    ];
+
+    // Seed Data Demo Users if empty
+    function seedInitialData() {
+      if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
+        const demoUser = {
+          username: 'Striker99',
+          name: 'Alex Mercer',
+          email: 'alex@gamer.io',
+          password: 'password123',
+          bio: 'All-rounder cricketer & Valorant Duelist main. Always playing weekend tournaments!',
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          title: 'Master Tactician',
+          level: 12,
+          xp: 2450,
+          customGames: [...DEFAULT_GAMES],
+          achievements: [
+            { id: 1, gameId: 'cricket', gameName: 'Cricket', matchType: 'Team League', title: '54* Runs Off 32 Balls', details: 'Scored winning runs against Lions XI in T20 league', score: '54 runs', outcome: 'Victory', date: '2026-10-15' },
+            { id: 2, gameId: 'cricket', matchType: 'Self Practice/Nets', gameName: 'Cricket', title: 'Spin Bowling Practice', details: 'Nets session focusing on leg breaks', score: '2 hrs', outcome: 'Completed', date: '2026-10-20' },
+            { id: 3, gameId: 'football', gameName: 'Football / Soccer', matchType: '5-a-side Nets', title: 'Hat-trick in Turf Match', details: 'Scored 3 goals in 5v5 friendly match', score: '3 Goals', outcome: 'Victory', date: '2026-10-24' },
+            { id: 4, gameId: 'valorant', gameName: 'Valorant', matchType: 'Competitive Rank', title: 'Ace clutch on Ascent', details: 'Clutched 1v4 round on A site using Reyna', score: '28/12 KDA', outcome: 'Victory', date: '2026-10-28' }
+          ]
+        };
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify([demoUser]));
+      }
+    }
+
+    // Storage Helper Methods
+    function getUsers() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
+    }
+
+    function saveUsers(users) {
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+    }
+
+    function getCurrentUser() {
+      const username = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+      if (!username) return null;
+      const users = getUsers();
+      return users.find(u => u.username.toLowerCase() === username.toLowerCase()) || null;
+    }
+
+    function setCurrentUserSession(username) {
+      if (username) {
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, username);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+      }
+      updateNavbar();
+    }
+
+    function updateUserProfile(updatedUser) {
+      const users = getUsers();
+      const index = users.findIndex(u => u.username.toLowerCase() === updatedUser.username.toLowerCase());
+      if (index !== -1) {
+        users[index] = updatedUser;
+        saveUsers(users);
+      }
+    }
+
+    // --- UI NAVIGATION & ROUTING ---
+    function navigateTo(viewName, params = {}) {
+      const app = document.getElementById('app-view');
+      window.scrollTo(0, 0);
+
+      switch (viewName) {
+        case 'landing':
+          app.innerHTML = renderLandingPage();
+          break;
+        case 'login':
+          app.innerHTML = renderLoginPage();
+          break;
+        case 'register':
+          app.innerHTML = renderRegisterPage();
+          break;
+        case 'dashboard':
+          const user = getCurrentUser();
+          if (!user) {
+            showToast('Please login to access your Dashboard', 'warning');
+            navigateTo('login');
+            return;
+          }
+          app.innerHTML = renderDashboardPage(user, params);
+          setTimeout(() => generateCardQRCode(user), 100);
+          break;
+        case 'public-card':
+          app.innerHTML = renderPublicCardPage(params.username);
+          setTimeout(() => {
+            const pubUser = getUsers().find(u => u.username.toLowerCase() === (params.username || '').toLowerCase());
+            if (pubUser) generateCardQRCode(pubUser, 'public-qr');
+          }, 100);
+          break;
+        default:
+          app.innerHTML = renderLandingPage();
+      }
+      updateNavbar();
+    }
+
+    function updateNavbar() {
+      const nav = document.getElementById('nav-actions');
+      const user = getCurrentUser();
+
+      if (user) {
+        nav.innerHTML = `
+          <button onclick="navigateTo('dashboard')" class="text-sm font-semibold text-gray-300 hover:text-white flex items-center space-x-2 bg-gray-800 px-3 py-1.5 rounded-lg border border-gray-700">
+            <img src="${user.avatar}" class="w-6 h-6 rounded-full object-cover border border-brand-accent">
+            <span>${user.name}</span>
+          </button>
+          <button onclick="handleLogout()" class="text-xs bg-red-950/60 hover:bg-red-900 border border-red-800 text-red-300 px-3 py-2 rounded-lg font-medium transition">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+          </button>
+        `;
+      } else {
+        nav.innerHTML = `
+          <button onclick="navigateTo('login')" class="text-sm font-semibold text-gray-300 hover:text-white px-3 py-2 transition">
+            Log In
+          </button>
+          <button onclick="navigateTo('register')" class="text-sm font-semibold bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white px-4 py-2 rounded-lg shadow-lg shadow-indigo-600/30 transition">
+            Create Account
+          </button>
+        `;
+      }
+    }
+
+    // --- VIEWS GENERATOR ---
+
+    // 1. Landing Page View (index.html content)
+    function renderLandingPage() {
+      return `
+        <div class="relative overflow-hidden pt-12 pb-20">
+          <!-- Background Glow -->
+          <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            <span class="inline-flex items-center space-x-2 bg-indigo-950/80 border border-indigo-700/50 text-indigo-300 px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase mb-6 shadow-sm">
+              <span class="w-2 h-2 rounded-full bg-brand-accent animate-pulse"></span>
+              <span>Local-Storage Powered Player ID Card</span>
+            </span>
+
+            <h1 class="text-4xl sm:text-6xl font-orbitron font-extrabold text-white tracking-tight max-w-4xl mx-auto leading-tight">
+              YOUR UNIVERSAL <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-500">GAMER & SPORTS</span> PASSPORT
+            </h1>
+
+            <p class="mt-6 text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto font-light">
+              Log in, generate your customizable scannable QR Gamer Card, and track all your achievements across physical sports (Cricket, Football) and online games.
+            </p>
+
+            <div class="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+              <button onclick="navigateTo('register')" class="px-8 py-4 bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-orbitron font-bold rounded-xl shadow-xl shadow-indigo-500/25 transition transform hover:-translate-y-0.5">
+                <i class="fa-solid fa-id-badge mr-2"></i> CLAIM YOUR GAMER CARD
+              </button>
+              <button onclick="navigateTo('login')" class="px-8 py-4 bg-gray-900 border border-gray-700 hover:border-gray-500 text-gray-200 font-semibold rounded-xl transition">
+                Sign In to Existing Card
+              </button>
+            </div>
+
+            <!-- Preview Card Showcase -->
+            <div class="mt-16 max-w-xl mx-auto text-left">
+              <div class="holo-card border-2 border-indigo-500/40 rounded-2xl p-6 shadow-2xl backdrop-blur-xl relative">
+                <div class="flex justify-between items-start mb-6">
+                  <div class="flex items-center space-x-4">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" class="w-16 h-16 rounded-xl object-cover border-2 border-brand-accent shadow-md">
+                    <div>
+                      <h3 class="font-orbitron font-bold text-xl text-white">Alex Mercer <span class="text-xs bg-indigo-900 text-indigo-300 px-2 py-0.5 rounded border border-indigo-700 ml-2">LVL 12</span></h3>
+                      <p class="text-sm text-cyan-400">@Striker99 • Master Tactician</p>
+                      <p class="text-xs text-gray-400 mt-1">Cricket Nets • Football 5s • Valorant</p>
+                    </div>
+                  </div>
+                  <div class="bg-white p-2 rounded-lg shadow-md">
+                    <i class="fa-solid fa-qrcode text-4xl text-gray-900"></i>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 bg-gray-900/80 p-3 rounded-xl text-center border border-gray-800 mb-4">
+                  <div>
+                    <p class="text-xs text-gray-400 uppercase font-semibold">Cricket Innings</p>
+                    <p class="text-lg font-bold text-white">24 Matches</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-400 uppercase font-semibold">Turf Goals</p>
+                    <p class="text-lg font-bold text-white">18 Goals</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-400 uppercase font-semibold">Rank Winrate</p>
+                    <p class="text-lg font-bold text-brand-accent">68%</p>
+                  </div>
+                </div>
+
+                <div class="flex justify-between items-center text-xs text-gray-400 font-mono">
+                  <span>ID: GC-99482-OFFICIAL</span>
+                  <span class="text-brand-accent flex items-center"><i class="fa-solid fa-circle text-[8px] mr-1.5 animate-pulse"></i> VERIFIED PLAYER CARD</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 text-left max-w-5xl mx-auto">
+              <div class="bg-gray-900/60 border border-gray-800 p-6 rounded-2xl">
+                <div class="w-12 h-12 bg-indigo-900/50 rounded-xl flex items-center justify-center text-indigo-400 text-xl mb-4">
+                  <i class="fa-solid fa-qrcode"></i>
+                </div>
+                <h4 class="font-orbitron font-bold text-lg text-white mb-2">Instant QR Code Card</h4>
+                <p class="text-sm text-gray-400">Scan anywhere on mobile to show your player identity, overall rank, and verifiable match achievements.</p>
+              </div>
+
+              <div class="bg-gray-900/60 border border-gray-800 p-6 rounded-2xl">
+                <div class="w-12 h-12 bg-cyan-900/50 rounded-xl flex items-center justify-center text-cyan-400 text-xl mb-4">
+                  <i class="fa-solid fa-cricket-bat-ball"></i>
+                </div>
+                <h4 class="font-orbitron font-bold text-lg text-white mb-2">Physical & Digital Games</h4>
+                <p class="text-sm text-gray-400">Log innings, net practice sessions, 5-a-side football matches, or online ranked esports battles seamlessly.</p>
+              </div>
+
+              <div class="bg-gray-900/60 border border-gray-800 p-6 rounded-2xl">
+                <div class="w-12 h-12 bg-purple-900/50 rounded-xl flex items-center justify-center text-purple-400 text-xl mb-4">
+                  <i class="fa-solid fa-sliders"></i>
+                </div>
+                <h4 class="font-orbitron font-bold text-lg text-white mb-2">100% Customizable</h4>
+                <p class="text-sm text-gray-400">Create custom sports or game profiles (e.g. Badminton, Apex Legends, Net Practicing) tailored to how you play.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 2. Login View
+    function renderLoginPage() {
+      return `
+        <div class="min-h-[80vh] flex items-center justify-center px-4">
+          <div class="max-w-md w-full bg-gray-900 border border-gray-800 rounded-2xl p-8 shadow-2xl relative">
+            <div class="text-center mb-8">
+              <div class="w-12 h-12 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center mx-auto mb-3 text-2xl border border-indigo-500/30">
+                <i class="fa-solid fa-right-to-bracket"></i>
+              </div>
+              <h2 class="text-2xl font-orbitron font-bold text-white">LOG IN TO GAMERCARD</h2>
+              <p class="text-xs text-gray-400 mt-1">Access your saved player identity and credentials</p>
+            </div>
+
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Username or Email</label>
+                <div class="relative">
+                  <i class="fa-solid fa-user absolute left-3.5 top-3.5 text-gray-500 text-sm"></i>
+                  <input type="text" id="login-username" required value="Striker99" placeholder="Enter username (e.g. Striker99)"
+                    class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-brand-500 transition">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Password</label>
+                <div class="relative">
+                  <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-gray-500 text-sm"></i>
+                  <input type="password" id="login-password" required value="password123" placeholder="••••••••"
+                    class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-brand-500 transition">
+                </div>
+              </div>
+
+              <div class="bg-indigo-950/40 border border-indigo-900/50 p-3 rounded-xl text-xs text-indigo-300 flex items-center space-x-2">
+                <i class="fa-solid fa-info-circle text-indigo-400 text-sm flex-shrink-0"></i>
+                <span>Demo user pre-filled! Click "Sign In" directly to explore test card.</span>
+              </div>
+
+              <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-orbitron font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition">
+                SIGN IN
+              </button>
+            </form>
+
+            <div class="mt-6 text-center text-xs text-gray-400">
+              Don't have a Gamer Card yet? 
+              <button onclick="navigateTo('register')" class="text-brand-accent hover:underline font-semibold ml-1">Create Account</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 3. Register View
+    function renderRegisterPage() {
+      return `
+        <div class="min-h-[85vh] flex items-center justify-center px-4 py-8">
+          <div class="max-w-md w-full bg-gray-900 border border-gray-800 rounded-2xl p-8 shadow-2xl">
+            <div class="text-center mb-6">
+              <div class="w-12 h-12 rounded-xl bg-cyan-600/20 text-cyan-400 flex items-center justify-center mx-auto mb-3 text-2xl border border-cyan-500/30">
+                <i class="fa-solid fa-address-card"></i>
+              </div>
+              <h2 class="text-2xl font-orbitron font-bold text-white">CREATE GAMER CARD</h2>
+              <p class="text-xs text-gray-400 mt-1">Generate your personal scannable player passport</p>
+            </div>
+
+            <form onsubmit="handleRegister(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Full Name</label>
+                <input type="text" id="reg-name" required placeholder="e.g. Jordan Lee"
+                  class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:border-brand-accent transition">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Gamer Tag / Username</label>
+                <input type="text" id="reg-username" required placeholder="e.g. ShadowStriker"
+                  class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:border-brand-accent transition">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Email Address</label>
+                <input type="email" id="reg-email" required placeholder="player@domain.com"
+                  class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:border-brand-accent transition">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Password</label>
+                <input type="password" id="reg-password" required placeholder="••••••••"
+                  class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:border-brand-accent transition">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Primary Title / Role</label>
+                <input type="text" id="reg-title" placeholder="e.g. Cricket All-Rounder / FPS Specialist"
+                  class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:border-brand-accent transition">
+              </div>
+
+              <button type="submit" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-orbitron font-bold rounded-xl shadow-lg transition mt-2">
+                GENERATE CARD & REGISTER
+              </button>
+            </form>
+
+            <div class="mt-6 text-center text-xs text-gray-400">
+              Already have an account? 
+              <button onclick="navigateTo('login')" class="text-brand-accent hover:underline font-semibold ml-1">Log In</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 4. Main Player Dashboard & Card Generator View
+    function renderDashboardPage(user, params) {
+      const activeFilter = params.filterGame || 'all';
+      const userAchievements = activeFilter === 'all' 
+        ? user.achievements 
+        : user.achievements.filter(a => a.gameId === activeFilter);
+
+      return `
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+          
+          <!-- Top Row: Digital Player Passport Card View + Quick Controls -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            
+            <!-- LEFT: Digital Holographic Scannable Player Card -->
+            <div class="lg:col-span-1">
+              <div class="text-xs font-orbitron uppercase text-gray-400 font-semibold mb-2 flex items-center justify-between">
+                <span><i class="fa-solid fa-id-card text-brand-accent mr-1"></i> Live Digital Player Card</span>
+                <button onclick="downloadCardAsJSON('${user.username}')" class="text-indigo-400 hover:underline"><i class="fa-solid fa-download"></i> Export Data</button>
+              </div>
+
+              <!-- Main Card Surface -->
+              <div id="printable-card" class="holo-card border-2 border-indigo-500/50 rounded-2xl p-6 shadow-2xl relative text-left">
+                <div class="flex justify-between items-start mb-4">
+                  <div class="flex items-center space-x-3">
+                    <img src="${user.avatar}" alt="Avatar" class="w-14 h-14 rounded-xl object-cover border-2 border-brand-accent shadow">
+                    <div>
+                      <h3 class="font-orbitron font-bold text-lg text-white leading-tight">${user.name}</h3>
+                      <p class="text-xs text-cyan-400 font-medium">@${user.username}</p>
+                      <span class="inline-block mt-1 text-[10px] font-semibold bg-indigo-900/80 text-indigo-300 px-2 py-0.5 rounded border border-indigo-700">
+                        ${user.title || 'Versatile Gamer'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <p class="text-xs text-gray-300 mb-4 line-clamp-2 italic">"${user.bio || 'Ready to compete in any match or tournament.'}"</p>
+
+                <!-- Dynamic QR Code Embed Box -->
+                <div class="bg-gray-950/90 border border-gray-800 p-4 rounded-xl flex items-center space-x-4 mb-4">
+                  <div id="dashboard-qrcode" class="bg-white p-1.5 rounded-lg flex-shrink-0 shadow"></div>
+                  <div class="text-xs space-y-1">
+                    <p class="font-orbitron font-bold text-white text-xs">SCAN TO VERIFY</p>
+                    <p class="text-[11px] text-gray-400 leading-tight">Scannable QR containing player ID & verified log count.</p>
+                    <button onclick="navigateTo('public-card', {username: '${user.username}'})" class="text-[11px] text-brand-accent hover:underline font-semibold block pt-1">
+                      <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Open Public Card Link
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Stats summary badges -->
+                <div class="grid grid-cols-3 gap-2 bg-gray-900/90 p-2.5 rounded-xl text-center border border-gray-800 text-xs">
+                  <div>
+                    <span class="text-gray-400 text-[10px] uppercase font-semibold block">Level</span>
+                    <span class="font-orbitron font-extrabold text-indigo-400 text-base">${user.level || 1}</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-400 text-[10px] uppercase font-semibold block">Total Logs</span>
+                    <span class="font-orbitron font-extrabold text-white text-base">${user.achievements.length}</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-400 text-[10px] uppercase font-semibold block">Games</span>
+                    <span class="font-orbitron font-extrabold text-brand-accent text-base">${user.customGames.length}</span>
+                  </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-gray-800/80 flex justify-between items-center text-[10px] font-mono text-gray-500">
+                  <span>GAMERCARD LOCAL-DB</span>
+                  <span class="text-brand-accent"><i class="fa-solid fa-shield-halved"></i> SECURE ID</span>
+                </div>
+              </div>
+
+              <!-- Action buttons for Card -->
+              <div class="mt-3 flex gap-2">
+                <button onclick="openEditProfileModal()" class="flex-1 py-2 bg-gray-800 hover:bg-gray-700 text-xs text-gray-200 font-semibold rounded-lg border border-gray-700 transition">
+                  <i class="fa-solid fa-pen mr-1"></i> Edit Bio / Photo
+                </button>
+                <button onclick="openAddGameModal()" class="flex-1 py-2 bg-gray-800 hover:bg-gray-700 text-xs text-cyan-400 font-semibold rounded-lg border border-gray-700 transition">
+                  <i class="fa-solid fa-plus-circle mr-1"></i> Add Game Type
+                </button>
+              </div>
+            </div>
+
+            <!-- RIGHT: Match Logging Dashboard & Achievements Hub -->
+            <div class="lg:col-span-2 space-y-6">
+              
+              <!-- Quick Add Log Banner -->
+              <div class="bg-gradient-to-r from-gray-900 via-indigo-950/40 to-gray-900 border border-indigo-900/60 p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
+                <div>
+                  <h2 class="text-xl font-orbitron font-bold text-white flex items-center">
+                    <i class="fa-solid fa-trophy text-brand-gold mr-2"></i> LOG NEW MATCH / SESSION
+                  </h2>
+                  <p class="text-xs text-gray-400 mt-1">Record self-practice, nets, team innings, goal sprees, or ranked esports matches.</p>
+                </div>
+                <button onclick="openAddAchievementModal()" class="px-5 py-3 bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-orbitron font-bold rounded-xl shadow-lg transition flex-shrink-0">
+                  <i class="fa-solid fa-plus mr-1"></i> LOG ACHIEVEMENT
+                </button>
+              </div>
+
+              <!-- Custom Game Category Filter Tabs -->
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-xs font-orbitron font-semibold text-gray-400 uppercase tracking-wider">YOUR ACTIVE SPORTS & GAMES</h3>
+                  <span class="text-xs text-gray-500">${user.customGames.length} Total Custom Categories</span>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                  <button onclick="navigateTo('dashboard', {filterGame: 'all'})"
+                    class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${activeFilter === 'all' ? 'bg-brand-500 text-white shadow-md' : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white'}">
+                    All Categories (${user.achievements.length})
+                  </button>
+                  ${user.customGames.map(g => {
+                    const count = user.achievements.filter(a => a.gameId === g.id).length;
+                    return `
+                      <button onclick="navigateTo('dashboard', {filterGame: '${g.id}'})"
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5 ${activeFilter === g.id ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white'}">
+                        <i class="fa-solid ${g.icon || 'fa-gamepad'}"></i>
+                        <span>${g.name}</span>
+                        <span class="bg-gray-800 px-1.5 py-0.2 rounded-full text-[10px] text-gray-300 ml-1">${count}</span>
+                      </button>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+
+              <!-- Match Achievements Log List -->
+              <div class="space-y-3">
+                <h3 class="text-xs font-orbitron font-semibold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+                  <span>ACHIEVEMENT TIMELINE</span>
+                  <span class="text-xs text-gray-500 font-sans">Sorted by recent</span>
+                </h3>
+
+                ${userAchievements.length === 0 ? `
+                  <div class="bg-gray-900/50 border border-dashed border-gray-800 p-8 rounded-2xl text-center">
+                    <i class="fa-solid fa-folder-open text-3xl text-gray-600 mb-2"></i>
+                    <p class="text-sm text-gray-400">No achievement logs found in this category yet.</p>
+                    <button onclick="openAddAchievementModal()" class="mt-3 text-xs text-brand-accent hover:underline font-semibold">
+                      + Click here to log your first match / session
+                    </button>
+                  </div>
+                ` : `
+                  <div class="space-y-3">
+                    ${userAchievements.map(ach => `
+                      <div class="bg-gray-900 border border-gray-800 hover:border-gray-700 p-4 rounded-xl transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+                        <div class="space-y-1">
+                          <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold font-orbitron px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
+                              ${ach.gameName || 'Game'}
+                            </span>
+                            <span class="text-xs font-medium px-2 py-0.5 rounded bg-gray-800 text-cyan-400 border border-gray-700">
+                              ${ach.matchType || 'Match'}
+                            </span>
+                            <span class="text-[11px] text-gray-500"><i class="fa-regular fa-calendar text-[10px] mr-1"></i>${ach.date}</span>
+                          </div>
+                          <h4 class="font-bold text-white text-base">${ach.title}</h4>
+                          <p class="text-xs text-gray-400">${ach.details || 'No detailed notes provided.'}</p>
+                        </div>
+
+                        <div class="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 border-gray-800 pt-2 sm:pt-0 gap-2">
+                          <div class="text-right">
+                            <span class="text-xs text-gray-400 uppercase font-semibold block">Stat/Score</span>
+                            <span class="font-orbitron font-bold text-brand-accent text-sm">${ach.score || 'N/A'}</span>
+                          </div>
+                          <button onclick="deleteAchievement(${ach.id})" class="text-xs text-red-500 hover:text-red-400 p-1">
+                            <i class="fa-solid fa-trash"></i>
+                          </button>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                `}
+              </div>
+
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 5. Public Scannable Card View (When someone scans the QR code or opens public link)
+    function renderPublicCardPage(username) {
+      const user = getUsers().find(u => u.username.toLowerCase() === (username || '').toLowerCase());
+
+      if (!user) {
+        return `
+          <div class="min-h-[70vh] flex flex-col items-center justify-center p-4 text-center">
+            <i class="fa-solid fa-triangle-exclamation text-4xl text-amber-500 mb-3"></i>
+            <h2 class="text-2xl font-orbitron font-bold text-white">PLAYER CARD NOT FOUND</h2>
+            <p class="text-sm text-gray-400 mt-1">The requested player identity "@${username}" does not exist in local storage.</p>
+            <button onclick="navigateTo('landing')" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold">Back to Home</button>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="max-w-xl mx-auto px-4 py-12 text-center">
+          <span class="text-xs font-orbitron font-bold text-brand-accent uppercase tracking-widest bg-brand-accent/10 px-3 py-1 rounded-full border border-brand-accent/20 mb-4 inline-block">
+            VERIFIED GAMERCARD PUBLIC CREDENTIAL
+          </span>
+
+          <!-- Holographic Card -->
+          <div class="holo-card border-2 border-indigo-500/60 rounded-2xl p-6 shadow-2xl text-left mt-4 relative">
+            <div class="flex justify-between items-start mb-6">
+              <div class="flex items-center space-x-4">
+                <img src="${user.avatar}" class="w-16 h-16 rounded-xl object-cover border-2 border-brand-accent shadow">
+                <div>
+                  <h3 class="font-orbitron font-bold text-2xl text-white">${user.name}</h3>
+                  <p class="text-sm text-cyan-400">@${user.username} • ${user.title || 'Player'}</p>
+                </div>
+              </div>
+              <div id="public-qr" class="bg-white p-1 rounded-lg"></div>
+            </div>
+
+            <p class="text-sm text-gray-300 mb-6 italic">"${user.bio || 'GamerCard Verified Player.'}"</p>
+
+            <div class="grid grid-cols-3 gap-2 bg-gray-900/90 p-3 rounded-xl text-center border border-gray-800 mb-6">
+              <div>
+                <p class="text-xs text-gray-400 uppercase font-semibold">Total Logs</p>
+                <p class="text-xl font-orbitron font-bold text-white">${user.achievements.length}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400 uppercase font-semibold">Level</p>
+                <p class="text-xl font-orbitron font-bold text-indigo-400">${user.level || 1}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400 uppercase font-semibold">Games</p>
+                <p class="text-xl font-orbitron font-bold text-brand-accent">${user.customGames.length}</p>
+              </div>
+            </div>
+
+            <!-- Recent Verified Achievements -->
+            <h4 class="font-orbitron text-xs text-gray-400 uppercase font-bold mb-3">VERIFIED MATCH TIMELINE (${user.achievements.length})</h4>
+            <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+              ${user.achievements.map(ach => `
+                <div class="bg-gray-950/80 p-3 rounded-xl border border-gray-800 flex justify-between items-center text-xs">
+                  <div>
+                    <span class="font-bold text-white block">${ach.title}</span>
+                    <span class="text-gray-400 text-[11px]">${ach.gameName} • ${ach.matchType}</span>
+                  </div>
+                  <span class="font-orbitron text-brand-accent font-bold">${ach.score || ''}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <button onclick="navigateTo('landing')" class="mt-6 text-xs text-gray-400 hover:text-white font-semibold">
+            ← Create Your Own GamerCard Free
+          </button>
+        </div>
+      `;
+    }
+
+    // --- CARD QR CODE GENERATION ENGINE ---
+    function generateCardQRCode(user, targetId = 'dashboard-qrcode') {
+      const container = document.getElementById(targetId);
+      if (!container) return;
+      container.innerHTML = '';
+
+      // URL pointing to public card view or payload summary
+      const cardUrl = `${window.location.origin}${window.location.pathname}?user=${user.username}#public-card`;
+
+      new QRCode(container, {
+        text: cardUrl,
+        width: targetId === 'public-qr' ? 64 : 76,
+        height: targetId === 'public-qr' ? 64 : 76,
+        colorDark: "#0b0f19",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+
+    // --- USER INTERACTION HANDLERS ---
+    function handleLogin(e) {
+      e.preventDefault();
+      const usernameInput = document.getElementById('login-username').value.trim();
+      const passwordInput = document.getElementById('login-password').value.trim();
+
+      const users = getUsers();
+      const match = users.find(u => u.username.toLowerCase() === usernameInput.toLowerCase() && u.password === passwordInput);
+
+      if (match) {
+        setCurrentUserSession(match.username);
+        showToast(`Welcome back, ${match.name}!`, 'success');
+        navigateTo('dashboard');
+      } else {
+        showToast('Invalid Username or Password. Demo user is Striker99 / password123', 'error');
+      }
+    }
+
+    function handleRegister(e) {
+      e.preventDefault();
+      const name = document.getElementById('reg-name').value.trim();
+      const username = document.getElementById('reg-username').value.trim().replace(/\s+/g, '');
+      const email = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value.trim();
+      const title = document.getElementById('reg-title').value.trim() || 'Rookie Gamer';
+
+      const users = getUsers();
+      if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+        showToast('Username already taken. Choose another tag.', 'error');
+        return;
+      }
+
+      const newUser = {
+        username,
+        name,
+        email,
+        password,
+        bio: 'Fresh GamerCard user tracking sports and game stats.',
+        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`,
+        title,
+        level: 1,
+        xp: 100,
+        customGames: [...DEFAULT_GAMES],
+        achievements: []
+      };
+
+      users.push(newUser);
+      saveUsers(users);
+      setCurrentUserSession(newUser.username);
+      
+      confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+      showToast('Gamer Card created successfully!', 'success');
+      navigateTo('dashboard');
+    }
+
+    function handleLogout() {
+      setCurrentUserSession(null);
+      showToast('Logged out successfully', 'info');
+      navigateTo('landing');
+    }
+
+    // --- MODAL ACTION ENGINE ---
+    function closeModal() {
+      document.getElementById('global-modal').classList.add('hidden');
+    }
+
+    function openAddAchievementModal() {
+      const user = getCurrentUser();
+      if (!user) return;
+
+      const modal = document.getElementById('modal-content');
+      modal.innerHTML = `
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-orbitron font-bold text-lg text-white"><i class="fa-solid fa-plus-circle text-brand-accent mr-1"></i> Log Achievement / Innings</h3>
+          <button onclick="closeModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form onsubmit="submitNewAchievement(event)" class="space-y-4 text-left">
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Select Game / Sport</label>
+            <select id="log-game-id" onchange="updateMatchTypeOptions()" required class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+              ${user.customGames.map(g => `<option value="${g.id}">${g.name} (${g.type})</option>`).join('')}
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Session / Match Type</label>
+            <select id="log-match-type" required class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+              <!-- JS populated based on selected game -->
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Achievement Title</label>
+            <input type="text" id="log-title" required placeholder="e.g. 52 Runs in Nets / 4 Goals / Ranked Win" class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Score / Stat</label>
+              <input type="text" id="log-score" placeholder="e.g. 52 runs (30b) or 3-1 Win" class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Date</label>
+              <input type="date" id="log-date" required value="${new Date().toISOString().split('T')[0]}" class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Notes / Innings Breakdown</label>
+            <textarea id="log-details" rows="2" placeholder="e.g. Played leg-spinners in net 2, good footwork..." class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none"></textarea>
+          </div>
+
+          <button type="submit" class="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-orbitron font-bold text-xs rounded-xl shadow-lg">
+            SAVE LOG TO GAMERCARD
+          </button>
+        </form>
+      `;
+
+      document.getElementById('global-modal').classList.remove('hidden');
+      updateMatchTypeOptions();
+    }
+
+    function updateMatchTypeOptions() {
+      const user = getCurrentUser();
+      const gameId = document.getElementById('log-game-id').value;
+      const matchTypeSelect = document.getElementById('log-match-type');
+      
+      const game = user.customGames.find(g => g.id === gameId);
+      if (game && game.types) {
+        matchTypeSelect.innerHTML = game.types.map(t => `<option value="${t}">${t}</option>`).join('');
+      } else {
+        matchTypeSelect.innerHTML = `<option value="General Match">General Match</option><option value="Practice/Nets">Practice / Nets</option>`;
+      }
+    }
+
+    function submitNewAchievement(e) {
+      e.preventDefault();
+      const user = getCurrentUser();
+      const gameId = document.getElementById('log-game-id').value;
+      const game = user.customGames.find(g => g.id === gameId);
+
+      const newLog = {
+        id: Date.now(),
+        gameId,
+        gameName: game ? game.name : 'Game',
+        matchType: document.getElementById('log-match-type').value,
+        title: document.getElementById('log-title').value.trim(),
+        score: document.getElementById('log-score').value.trim(),
+        date: document.getElementById('log-date').value,
+        details: document.getElementById('log-details').value.trim()
+      };
+
+      user.achievements.unshift(newLog);
+      // Level Up Logic
+      user.xp = (user.xp || 100) + 150;
+      user.level = Math.floor(user.xp / 200);
+
+      updateUserProfile(user);
+      closeModal();
+      confetti({ particleCount: 50, spread: 60 });
+      showToast('Achievement logged to card!', 'success');
+      navigateTo('dashboard');
+    }
+
+    function deleteAchievement(logId) {
+      const user = getCurrentUser();
+      user.achievements = user.achievements.filter(a => a.id !== logId);
+      updateUserProfile(user);
+      showToast('Log removed', 'info');
+      navigateTo('dashboard');
+    }
+
+    function openAddGameModal() {
+      const modal = document.getElementById('modal-content');
+      modal.innerHTML = `
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-orbitron font-bold text-lg text-white"><i class="fa-solid fa-gamepad text-cyan-400 mr-1"></i> Add Custom Game Category</h3>
+          <button onclick="closeModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form onsubmit="submitCustomGame(event)" class="space-y-4 text-left">
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Game or Sport Name</label>
+            <input type="text" id="custom-game-name" required placeholder="e.g. Badminton, Apex Legends, Basketball" class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Category Type</label>
+            <select id="custom-game-category" class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+              <option value="Physical Sport">Physical Sport</option>
+              <option value="Esports">Esports / Video Game</option>
+              <option value="Mind Sport">Mind Sport / Board Game</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Sub-Types / Modes (Comma Separated)</label>
+            <input type="text" id="custom-game-types" placeholder="e.g. Singles Nets, Doubles Match, Tournament" class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+          </div>
+
+          <button type="submit" class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-orbitron font-bold text-xs rounded-xl shadow-lg">
+            ADD GAME TO PASSPORT
+          </button>
+        </form>
+      `;
+
+      document.getElementById('global-modal').classList.remove('hidden');
+    }
+
+    function submitCustomGame(e) {
+      e.preventDefault();
+      const user = getCurrentUser();
+      const name = document.getElementById('custom-game-name').value.trim();
+      const type = document.getElementById('custom-game-category').value;
+      const rawTypes = document.getElementById('custom-game-types').value.trim();
+
+      const gameTypes = rawTypes ? rawTypes.split(',').map(t => t.trim()) : ['Self Play', 'Team Match', 'Practice'];
+
+      const gameId = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      if (user.customGames.some(g => g.id === gameId)) {
+        showToast('Game category already exists!', 'warning');
+        return;
+      }
+
+      user.customGames.push({
+        id: gameId,
+        name,
+        type,
+        icon: type === 'Physical Sport' ? 'fa-person-running' : 'fa-gamepad',
+        types: gameTypes
+      });
+
+      updateUserProfile(user);
+      closeModal();
+      showToast(`Added "${name}" category!`, 'success');
+      navigateTo('dashboard');
+    }
+
+    function openEditProfileModal() {
+      const user = getCurrentUser();
+      const modal = document.getElementById('modal-content');
+      modal.innerHTML = `
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-orbitron font-bold text-lg text-white"><i class="fa-solid fa-pen text-indigo-400 mr-1"></i> Edit Gamer Profile</h3>
+          <button onclick="closeModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form onsubmit="submitEditProfile(event)" class="space-y-4 text-left">
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Display Name</label>
+            <input type="text" id="edit-name" value="${user.name}" required class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Title / Speciality</label>
+            <input type="text" id="edit-title" value="${user.title || ''}" class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Bio / Tagline</label>
+            <textarea id="edit-bio" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none">${user.bio || ''}</textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Avatar Image URL</label>
+            <input type="url" id="edit-avatar" value="${user.avatar}" class="w-full bg-gray-950 border border-gray-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+          </div>
+
+          <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-orbitron font-bold text-xs rounded-xl shadow-lg">
+            UPDATE CARD DETAILS
+          </button>
+        </form>
+      `;
+
+      document.getElementById('global-modal').classList.remove('hidden');
+    }
+
+    function submitEditProfile(e) {
+      e.preventDefault();
+      const user = getCurrentUser();
+      user.name = document.getElementById('edit-name').value.trim();
+      user.title = document.getElementById('edit-title').value.trim();
+      user.bio = document.getElementById('edit-bio').value.trim();
+      user.avatar = document.getElementById('edit-avatar').value.trim() || user.avatar;
+
+      updateUserProfile(user);
+      closeModal();
+      showToast('Profile updated!', 'success');
+      navigateTo('dashboard');
+    }
+
+    // --- HELPER UTILITIES ---
+    function showToast(message, type = 'info') {
+      const toastContainer = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const colors = {
+        success: 'bg-emerald-950 border-emerald-700 text-emerald-200',
+        error: 'bg-red-950 border-red-700 text-red-200',
+        warning: 'bg-amber-950 border-amber-700 text-amber-200',
+        info: 'bg-indigo-950 border-indigo-700 text-indigo-200'
+      };
+
+      toast.className = `pointer-events-auto flex items-center space-x-2 px-4 py-3 rounded-xl border text-xs shadow-xl transition transform duration-300 ${colors[type] || colors.info}`;
+      toast.innerHTML = `<span>${message}</span>`;
+
+      toastContainer.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function downloadCardAsJSON(username) {
+      const user = getUsers().find(u => u.username === username);
+      if (!user) return;
+
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(user, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `GamerCard_${username}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('Gamer Card exported as JSON file', 'success');
+    }
+
+    // Check URL parameters for direct public view sharing
+    function checkUrlRoutes() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sharedUser = urlParams.get('user');
+      if (sharedUser) {
+        navigateTo('public-card', { username: sharedUser });
+      } else {
+        navigateTo('landing');
+      }
+    }
+
+    // Initialize App On Load
+    window.onload = function() {
+      seedInitialData();
+      checkUrlRoutes();
+    };
+  </script>
+</body>
+</html>
